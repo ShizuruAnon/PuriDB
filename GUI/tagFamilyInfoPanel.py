@@ -1,0 +1,1 @@
+class tagFamilyInfoPanel(puriGuiCommon.optionsGridPanel):
