@@ -21,7 +21,7 @@ def main():
 
 	username = 'shizuruanon'
 	password = 'tucker22'
-	browserOptions = puriDataStructures.pixivBrowserOptions()
+	browserOptions = puriDataStructures.puriBrowserOptions()
 	browserOptions.username = username
 	browserOptions.password = password
 

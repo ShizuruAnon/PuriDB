@@ -9,6 +9,7 @@ import puriDataStructures
 import puriCommunication
 import puriEvents
 import puriGuiCommon
+import puriGuiDownloadOptionPanels
 from puriGuiImageScrollPanel import puriImageScrollPanel
 from puriGuiImageScrollPanel import puriImageInfoPanel
 
@@ -49,78 +50,33 @@ class searchStartPanel(puriGuiCommon.optionsGridPanel):
 		self.refreshPanel()
 
 	def onStartSearchButtonPress(self, event):
-		searchOptions = self.parent.dlOptionsPanel.getOptions()
-		searchOptions.tags = self.parent.tagBoxPanel.getSearchTags()
+		searchOptions = self.parent.downloadOptionPanel.getSearchOptions()
+		searchOptions.tags = self.parent.searchTagsPanel.getSearchTags()
+		comm = puriCommunication.get_communications()
 		
-		if len(searchOptions.tags) > 0:
-			# Search for tags
-			comm = puriCommunication.get_communications()
+		if (searchOptions.website  == 'Pixiv Tags') and (len(searchOptions.tags) > 0):
 			comm.guiToDownloader.send_message('downloader-tag_search', (searchOptions, self))
-
-class searchOptionsPanel(puriGuiCommon.optionsGridPanel):
-	def __init__(self, parent):
-		puriGuiCommon.optionsGridPanel.__init__(self, parent, 'Search Options')
-		
-		# Artist Id Text
-		self.artistIdText = wx.StaticText(self, -1, label='Artist Id:')
-		self.grid.Add(self.artistIdText, pos=(0, 0), span=(1, 1), flag=wx.ALIGN_LEFT)
-
-		# Artist Id TextCtrl
-		self.artistIdTextCtrl = wx.TextCtrl(self, -1)
-		self.grid.Add(self.artistIdTextCtrl, pos=(0, 1), span=(1, 1), flag=wx.EXPAND|wx.ALIGN_LEFT)
-	
-		# Start Date Text
-		self.startDateText = wx.StaticText(self, -1, label='Start Date:')
-		self.grid.Add(self.startDateText, pos=(1, 0), span=(1, 1), flag=wx.ALIGN_LEFT)
-
-		# Start Date TextCtrl
-		self.startDateTextCtrl = wx.TextCtrl(self, -1)
-		self.grid.Add(self.startDateTextCtrl, pos=(1, 1), span=(1, 1), flag=wx.EXPAND|wx.ALIGN_LEFT)
-
-		# End Date Text
-		self.endDateText = wx.StaticText(self, -1, label='End Date:')
-		self.grid.Add(self.endDateText, pos=(2, 0), span=(1, 1), flag=wx.ALIGN_LEFT)
-
-		# End TextCtrl
-		self.endDateTextCtrl = wx.TextCtrl(self, -1)
-		self.grid.Add(self.endDateTextCtrl, pos=(2, 1), span=(1, 1), flag=wx.EXPAND|wx.ALIGN_LEFT)
-
-		# r18 toggle
-		self.r18Toggle = wx.CheckBox(self, wx.ID_ANY, 'r18 Only')
-		self.r18Toggle.SetValue(False)
-		self.grid.Add(self.r18Toggle, pos=(3, 0), span=(1, 1), flag=wx.ALIGN_LEFT)
-
-		# Oldest First
-		self.oldestFirstToggle = wx.CheckBox(self, wx.ID_ANY, 'Oldest First')
-		self.oldestFirstToggle.SetValue(False)
-		self.grid.Add(self.oldestFirstToggle, pos=(3, 1), span=(1, 1), flag=wx.ALIGN_RIGHT)
-
-		self.refreshPanel()
-
-	def getOptions(self):
-		searchOptions = puriDataStructures.pixivSearchOptions()
-		searchOptions.memberId = self.artistIdTextCtrl.GetValue()
-		searchOptions.oldestFirst = self.oldestFirstToggle.GetValue()
-		searchOptions.r18Mode = self.r18Toggle.GetValue()
-		searchOptions.startDate = self.startDateTextCtrl.GetValue()
-		searchOptions.endDate = self.endDateTextCtrl.GetValue()
-		return searchOptions
-
+		elif (searchOptions.website == 'Pixiv Artist') and (searchOptions.artistId != ''):
+			print 'artist Search'
 
 class downloadMenuPanel(puriGuiCommon.optionsGridPanel):
 	def __init__(self, parent, parentSplitter):
 		puriGuiCommon.optionsGridPanel.__init__(self, parent, '', parentSplitter)
 
-		# Setup the downloadOptions combobox
-		choices = ['Pixiv']
-		#choices = ['Pixiv Download by Tags','Pixiv Download by Artist']
-		self.downloadOptions = wx.ComboBox(self, choices=choices, style=wx.CB_READONLY)
-		self.downloadOptions.SetStringSelection(choices[0])
-		self.grid.Add(self.downloadOptions, pos=(0, 0), span=(1, 1), flag=wx.EXPAND|wx.ALIGN_TOP, border=0)
+		# Start/Download Progress Panel
+		self.startPanel = searchStartPanel(self)
+		self.grid.Add(self.startPanel, pos=(0, 0), span=(1, 1), flag=wx.EXPAND|wx.TOP)
+
+		# Setup the downloadType combobox
+		choices = ['Pixiv Tags', 'Pixiv Artist']
+		self.downloadType = wx.ComboBox(self, choices=choices, style=wx.CB_READONLY)
+		self.downloadType.SetStringSelection(choices[0])
+		self.lastDownloadType = ''
+		self.grid.Add(self.downloadType, pos=(1, 0), span=(1, 1), flag=wx.EXPAND|wx.ALIGN_TOP, border=0)
 
 		# Bind Buttons
 		# TODO
-		#self.Bind(wx.EVT_TEXT, self.setMenu, self.downloadOptions)
+		self.Bind(wx.EVT_TEXT, self.setMenu, self.downloadType)
 
 		self.setMenu()
 		self.grid.AddGrowableCol(0)
@@ -129,24 +85,23 @@ class downloadMenuPanel(puriGuiCommon.optionsGridPanel):
 
 
 	def setMenu(self, event=None):
-
-		'''children = self.grid.GetChildren()
-		for i in range(1, len(children)):
-			if children[i] != self.dlMenuItem:
-				self.grid.Hide(i)
-				self.grid.Remove(i)
-		'''
-
 		# Add the new one to the grid
-		currentDl = self.downloadOptions.GetValue()
-		if currentDl == 'Pixiv':
-			self.startPanel = searchStartPanel(self)
-			self.grid.Add(self.startPanel, pos=(1, 0), span=(1, 1), flag=wx.EXPAND|wx.TOP)
-			self.tagBoxPanel = puriGuiCommon.searchTagBox(self)
-			self.grid.Add(self.tagBoxPanel, pos=(2, 0), span=(1, 1), flag=wx.EXPAND)
-			self.dlOptionsPanel = searchOptionsPanel(self)
-			self.grid.Add(self.dlOptionsPanel, pos=(3, 0), span=(1, 1), flag=wx.EXPAND)
+		currentDownloadType = self.downloadType.GetValue()
+		if currentDownloadType != self.lastDownloadType:
+			self.lastDownloadType = currentDownloadType
+			if len(self.grid.GetChildren()) == 4:
+				self.grid.Hide(2)
+				self.grid.Hide(3)
+				self.grid.Remove(3)
+				self.grid.Remove(2)
 
+			if currentDownloadType == 'Pixiv Tags':
+				self.searchTagsPanel = puriGuiCommon.searchTagBox(self, size=(150, 120))
+				self.stp = self.grid.Add(self.searchTagsPanel, pos=(2, 0), span=(1, 1), flag=wx.EXPAND)
+				self.downloadOptionPanel = puriGuiDownloadOptionPanels.pixivTagDownloadOptionPanel(self)
+				self.dop = self.grid.Add(self.downloadOptionPanel, pos=(3, 0), span=(1, 1), flag=wx.EXPAND)
+
+			self.refreshPanel()
 class puriDownloadPanel(wx.SplitterWindow):
 	def __init__(self, parent, *args, **kwargs):
 		self.parent = parent
@@ -160,7 +115,3 @@ class puriDownloadPanel(wx.SplitterWindow):
 		self.imageScrollPanel = puriImageScrollPanel(self, style=wx.SIMPLE_BORDER)
 		self.SplitVertically(self.leftPanelSplitter, self.imageScrollPanel)
 		self.SetMinimumPaneSize(220)
-
-		#sizer = wx.BoxSizer(wx.VERTICAL)
-		#sizer.add(splitter, 1, wx.EXPAND)
-		#parent.SetSizer(sizer)

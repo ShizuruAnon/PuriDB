@@ -4,6 +4,7 @@ class puriImageTag():
 		self.tagAttribute=tagAttribute
 		self.tagValue=tagValue
 
+
 class puriImageInfo():
 	def __init__(self, imagePath=None):
 		self.imagePath = imagePath
@@ -33,39 +34,34 @@ class puriImageInfo():
 				tagList.append(tag)
 		return tagList
 
-	def get_unique_tag_of_attribute(self, tagAttribute):
+	def get_value(self, tagAttribute):
 		for tag in self.tags:
 			if tag.tagAttribute == tagAttribute:
-				return tag
+				return tag.tagValue
 		return None
 
-class pixivImageInfo():
-	def __init__(self):
-		self.type = None
-		self.imageId = None
-		self.artistId = None
-		self.tags = None
-		self.imageName = None
-		self.artistName = None
-		self.numBookmarks = None
-		self.imageUrls = []
-		self.imageSizes = []
-		self.imageDatas = []
-		
-class pixivSearchOptions:
-	def __init__(self, tags=None, titleCaption=False, wildCard=True,
-			oldestFirst=True, startDate='', endDate='',
-			memberId='', r18Mode=False):
+	def remove_tag(self, tagAttribute, tagValue):
+		try:
+			self.tags.remove((tagAttribute, tagValue))
+		except:
+			pass
+	
+
+class puriDownloadOptions:
+	def __init__(self, website, tags=[],
+			searchOrder='', startDate='', endDate='',
+			artistId='', artistName='', rating=''):
+		self.website = website
 		self.tags = tags
-		self.titleCaption = titleCaption
-		self.wildCard = wildCard
-		self.oldestFirst = oldestFirst
+		self.searchOrder = searchOrder
 		self.startDate = startDate
 		self.endDate = endDate
-		self.memberId = memberId
-		self.r18Mode = r18Mode
+		self.artistId = artistId
+		self.artistName = artistName
+		self.rating = rating
 
-class pixivBrowserOptions:
+
+class puriBrowserOptions:
 	def __init__(self):
 		self.set_to_default()
 
@@ -93,6 +89,3 @@ class pixivBrowserOptions:
 		self.debugHttp = False
 		self.enableDump = True
 		self.dumpTagSearchPage = False
-
-
-		#self.writeConfig

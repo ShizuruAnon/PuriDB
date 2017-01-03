@@ -15,9 +15,9 @@ class tagFamilyInfoPanel(puriGuiCommon.optionsGridPanel):
 		self.tagListCtrl.InsertColumn(3, 'Parent Value', width=200)
 		self.grid.Add(self.tagListCtrl, pos=(0, 0), span=(1, 4), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
 		
-		self.childTagBox = puriGuiCommon.searchTagBox(self, 'New Child Tags')
+		self.childTagBox = puriGuiCommon.searchTagBox(self, boxTitle='New Child Tags')
 		self.grid.Add(self.childTagBox, pos=(1, 0), span=(1, 2), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
-		self.parentTagBox = puriGuiCommon.searchTagBox(self, 'New Parent Tags')
+		self.parentTagBox = puriGuiCommon.searchTagBox(self, boxTitle='New Parent Tags')
 		self.grid.Add(self.parentTagBox, pos=(1, 2), span=(1, 2), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
 		
 		# Add Tag Relationships

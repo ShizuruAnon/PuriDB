@@ -79,29 +79,36 @@ def generate_search_tag_url(page, searchInfo):
     return url
 
 def parseImageHtml(imageHtml):
-    imageInfo = puriDataStructures.pixivImageInfo()
+    imageInfo = puriDataStructures.puriImageInfo()
 
     classInfo = imageHtml.a['class']
     if classInfo == ['work', '_work', '']:
-        imageInfo.type = 'image'
+        imageType = 'pixiv_image'
     elif classInfo == ['work', '_work', 'multiple', '']:
-        imageInfo.type = 'manga'
+        imageType = 'pixiv_manga'
     elif classInfo == ['work', '_work', 'ugoku-illust', '']:
-        imageInfo.type = 'ugoira'
+        imageType = 'pixiv_ugoira'
+    imageInfo.add_tag('image_type', imageType)
 
-    imageInfo.imageId = imageHtml.img['data-id']
-    imageInfo.artistId = imageHtml.img['data-user-id']
-    imageInfo.tags = imageHtml.img['data-tags'].split()
-    imageInfo.imageName = imageHtml.h1['title']
-    imageInfo.artistName = imageHtml.find('a', {'class':['user', 'ui-profile-popup']})['data-user_name']
+    imageInfo.add_tag('image_id', imageHtml.img['data-id'])
+    imageInfo.add_tag('artist_id', imageHtml.img['data-user-id'])
+    imageInfo.add_tag('image_name', imageHtml.h1['title'])
+    artistName = imageHtml.find('a', {'class':['user', 'ui-profile-popup']})['data-user_name']
+    imageInfo.add_tag('artist_name', artistName)
+
     bookmarkHtml = imageHtml.find('a', {'class':['bookmark-count', 'ui-tooltip']})
     if bookmarkHtml != None:
         bookmarkString = bookmarkHtml['data-tooltip']
         bookmarkString = bookmarkString[0:bookmarkString.find(u'件')]
         bookmarkString = bookmarkString.replace(',', '')
-        imageInfo.numBookmarks = int(bookmarkString)
+        numBookmarks = int(bookmarkString)
     else:
-        imageInfo.numBookmarks = 0
+        numBookmarks = 0
+    imageInfo.add_tag('num_bookmarks', numBookmarks)
+    
+    tags = imageHtml.img['data-tags'].split()
+    for tag in tags:
+        imageInfo.add_tag('tag', tag)
 
     return imageInfo
 

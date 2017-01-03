@@ -27,13 +27,13 @@ class optionsGridPanel(wx.Panel):
 		self.Show()
 
 class searchTagBox(optionsGridPanel):
-	def __init__(self, parent, boxTitle='Search Tags'):
+	def __init__(self, parent, size=(150, 80), boxTitle='Search Tags'):
 		optionsGridPanel.__init__(self, parent, boxTitle)
 		
 		# Added Tags List
-		self.addedTagsListCtrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_HRULES)
+		self.addedTagsListCtrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_HRULES, size=size)
 		self.addedTagsListCtrl.InsertColumn(0, 'TagAttr', width=50)
-		self.addedTagsListCtrl.InsertColumn(1, 'TagVal', width=90)
+		self.addedTagsListCtrl.InsertColumn(1, 'TagVal', width=100)
 		self.grid.Add(self.addedTagsListCtrl, pos=(0, 0), span=(3, 1), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
 
 		# New Tags

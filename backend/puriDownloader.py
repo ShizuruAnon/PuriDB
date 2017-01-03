@@ -6,6 +6,7 @@ import shutil
 #import imageInfo
 import zipfile
 import sys
+import urllib
 
 from bs4 import BeautifulSoup
 
@@ -86,79 +87,110 @@ class pixiv_image_searcher:
 	
 	# Seach from a bunch of tags
 	def tag_search(self, message):
-		searchInfo = message[0]
+		import pdb
+		pdb.set_trace()
+		searchOptions = message[0]
 		self.caller = message[1]
 		# Initialize Variables
 		continueSearch = True
 		page = 0
 		responceList = []
-		allImageInfo = []
+		self.imageInfoToDownload = []
 
 		# Search Until no more images are found
 		while continueSearch:
 			page += 1 # To the next page
 
 			# Generate the Url, open it, then parse it for results
-			searchUrl = pixiv_support.generate_search_tag_url(page, searchInfo)
+			searchUrl = self.generate_tag_url(page, searchOptions)
 
 			self.comm.downloaderToBrowser.send_message('browser-open', searchUrl)
 			messageType, responce = self.comm.browserToDownloader.rec_message()
 
-			pageImageInfo = pixiv_support.parse_tags(responce, searchInfo)
+			pageImageInfo = pixiv_support.parse_tags(responce, searchOptions)
 
 			# Get the URLs and size
 			for i in range(0, len(pageImageInfo)):
-				pageImageInfo[i] = self.get_images_url(pageImageInfo[i])
-				pageImageInfo[i] = self.get_images_size(pageImageInfo[i])
+				self.get_image_url(pageImageInfo[i])
+				#pageImageInfo[i] = self.get_images_size(pageImageInfo[i])
 
 
 			# Add to list of responces from the different pages if there, if not exit
-			if len(pageImageInfo) > 0:
-				responceList.append(responce)
-				allImageInfo += pageImageInfo
-			else:
+			if len(pageImageInfo) == 0:
 				continueSearch = False
 
-			evt = puriEvents.setImagesFoundEvent(puriEvents.myEVT_setImagesFound, -1, len(allImageInfo))
+			evt = puriEvents.setImagesFoundEvent(puriEvents.myEVT_setImagesFound, -1, len(self.imageInfoToDownload))
 			wx.PostEvent(self.caller, evt)
 
-		self.download_images(allImageInfo)
+		self.download_images()
 		#return (responceList, allImageInfo)
+
+	def encode_unicode_tags(self, tags):
+		searchString = ''
+		for tag in tags:
+			if not tag.startswith('%'):
+				tag = tag.encode('utf8')
+				tag = urllib.quote_plus(tag)
+			searchString += '%20' + tag
+		return searchString
+
+	def generate_tag_url(self, page, searchOptions):
+		if searchOptions.website == 'Pixiv Tags':
+			tags = self.encode_unicode_tags(searchOptions.tags)
+
+			dateParam = ''
+			if searchOptions.startDate is not u'':
+				dateParam += '&scd=' + searchOptions.startDate
+			if searchOptions.endDate is not u'':
+				dateParam += '&ecd=' + searchOptions.endDate
+			
+			url  = 'http://www.pixiv.net/search.php?s_mode=s_tag&p=' + str(page) + '&word=' + tags + dateParam
+			
+			if searchOptions.rating == 'explicit':
+				url += '&r18=1'
+
+			if searchOptions.searchOrder == 'Oldest First':
+				url += '&order=date'
+			elif searchOptions.searchOrder == 'Oldest Last':
+				url += '&order=date_d'
+			elif searchOptions.searchOrder == 'Popular First':
+				url += '&order=popular_d'
+		return url
 
 
 	# Get the size of the images 
-	def get_images_size(self, imageInfo):
+	def get_image_size(self, imageInfo):
+		image_type = imageInfo.get_value('image_type')
+		if image_type == 'pixiv_mange':
+			image_id = imageInfo.get_value('pixiv_manga_id')
+		else:
+			image_id = imageInfo.get_value('image_id')
 
 		# Make referer link 
-		referer = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=' + str(imageInfo.imageId)
+		referer = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=' + image_id
 		
-		# For each image url visit page and get size of image
-		for i in range(0, len(imageInfo.imageUrls)):
-
-			# Create Request
-			url = imageInfo.imageUrls[i]
-			request = pixiv_support.create_custom_request(url, referer, head=True)
+		# Create Request
+		url = imageInfo.get_value('image_url')
+		request = pixiv_support.create_custom_request(url, referer, head=True)
 			
-			# Send Request and get responce
-			self.comm.downloaderToBrowser.send_message('browser-open_novisit', request)
-			messageType, responce = self.comm.browserToDownloader.rec_message()
-			size = int(responce.info()['Content-Length'])
-
-			# Add size to lists
-			imageInfo.imageSizes.append(size)
-
-		return imageInfo
+		# Send Request and get responce
+		self.comm.downloaderToBrowser.send_message('browser-open_novisit', request)
+		messageType, responce = self.comm.browserToDownloader.rec_message()
+		size = int(responce.info()['Content-Length'])
+		imageInfo.add_tag('image_size', size)
 
 
 	# Get the direct URL of each image
-	def get_images_url(self, imageInfo):
+	def get_image_url(self, imageInfo):
 
+		imageType = imageInfo.get_value('image_type')
+		imageId = imageInfo.get_value('image_id')
+		
 		# Get the URL for just a regular image
-		if imageInfo.type == 'image':
-
+		if imageType == 'pixiv_image':
 			# Create the url for the page the image is on
 			postPageUrl = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id='
-			postPageUrl += (imageInfo.imageId.encode('utf8'))
+			postPageUrl += imageId
 
 			# Send request to the page and get the responce
 			self.comm.downloaderToBrowser.send_message('browser-open', postPageUrl)
@@ -167,18 +199,21 @@ class pixiv_image_searcher:
 			# Parse the responce to get the image
 			soup = BeautifulSoup(responce, 'html.parser')
 			result = soup.find('img', {'class':'original-image'})
-			imageUrl = result['data-src']
-
+			
 			# Add the url to the list
-			imageInfo.imageUrls.append(imageUrl)
+			imageInfo.add_tag('image_url', result['data-src'])
 
-
+			self.imageInfoToDownload.append(imageInfo)
+			
 		# Get the URL for a series of images in a manga post
-		elif imageInfo.type == 'manga':
+		elif imageType == 'pixiv_manga':
+			imageId = imageInfo.get_value('image_id')
+			imageInfo.add_tag('pixiv_manga_id', imageId)
+			imageInfo.remove_tag('image_id', imageId)
 
 			# Create the url for the page the image is on
 			postPageUrl = 'http://www.pixiv.net/member_illust.php?mode=manga&illust_id='
-			postPageUrl += imageInfo.imageId
+			postPageUrl += imageId
 
 			# Send request to the page and get the responce
 			self.comm.downloaderToBrowser.send_message('browser-open', postPageUrl)
@@ -187,13 +222,15 @@ class pixiv_image_searcher:
 			# Parse the responce to get the images
 			soup = BeautifulSoup(responce, 'html.parser')
 			imageHtmls = soup.findAll('img', {'data-filter':"manga-image"})
-			for imageHtml in imageHtmls:
-				imageUrl = imageHtml['data-src']
-				imageInfo.imageUrls.append(imageUrl)
+			for i in range(0, len(imageHtmls)):
+				tempInfo = imageInfo
+				tempInfo.add_tag('image_id', imageId + '_' + str(i))
+				tempInfo.add_tag('image_url', imageHtmls[i]['data-src'])
+				self.imageInfoToDownload.append(tempInfo)
 
 
 		# Get the URL for a ugoira image
-		elif imageInfo.type == 'ugoira':
+		elif imageType == 'pixiv_ugoira':
 
 			# Create the url for the page the image is on
 			postPageUrl = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id='
@@ -217,50 +254,52 @@ class pixiv_image_searcher:
 							break
 
 			# Add the image to the url list and add the data to the data as well
-			imageInfo.imageUrls.append(url)
-			imageInfo.ugoira_data = ugoiraData
-
-		return imageInfo
+			imageInfo.add_tag('image_url', url)
+			imageInfo.add_tag('ugoira_data', ugoiraData)
+			self.imageInfoToDownload.append(imageInfo)
 
 
 	# Download all the images in the list
-	def download_images(self, allImageInfo):
+	def download_images(self):
 
 		# Get the database
 		#database = puriDatabase.get_database()
 		count = 0
 		# Download all images in list
-		for imageInfo in allImageInfo:
+		for imageInfo in self.imageInfoToDownload:
+
+			if imageInfo.get_value('image_type') == 'pixiv_manga':
+				imageId = imageInfo.get_value('pixiv_manga_id')
+			else:
+				imageId = imageInfo.get_value('image_id')
 
 			# Create the referer
-			referer = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=' + str(imageInfo.imageId)
+			referer = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=' + imageId
 			
-			# Download all images for each image (only for manga)
-			for i in range(0, len(imageInfo.imageUrls)):
+			# Request the image and get the result
+			url = imageInfo.get_value('image_url')
+			request = pixiv_support.create_custom_request(url, referer)
 
-				# Request the image and get the result
-				url = imageInfo.imageUrls[i]
-				request = pixiv_support.create_custom_request(url, referer)
+			self.comm.downloaderToBrowser.send_message('browser-open_novisit', request)
+			messageType, downloadingImage = self.comm.browserToDownloader.rec_message()
 
-				self.comm.downloaderToBrowser.send_message('browser-open_novisit', request)
-				messageType, downloadingImage = self.comm.browserToDownloader.rec_message()
+			# Wait for image to be fully downloaded
+			downloadedSize = 0
 
-				# Wait for image to be fully downloaded
-				downloadedSize = 0
-				imageSize = imageInfo.imageSizes[i]
+			# Continue until image is fully downloaded
+			self.get_image_size(imageInfo)
+			imageSize = imageInfo.get_value('image_size')
+			while (downloadedSize < imageSize):
 
-				# Continue until image is fully downloaded
-				while (downloadedSize != imageSize):
+				# Go to back of image and tell position
+				downloadingImage.seek(0, 2)
+				downloadedSize = downloadingImage.tell()
 
-					# Go to back of image and tell position
-					downloadingImage.seek(0, 2)
-					downloadedSize = downloadingImage.tell()
+			# Go back to the front of the image
+			downloadingImage.seek(0, 0)
 
-				# Go back to the front of the image
-				downloadingImage.seek(0, 0)
-
-				# Add image to the queue
-				imageInfo.imageDatas.append(downloadingImage.read())
+			# Add image to the queue
+			imageInfo.imageData = downloadingImage.read()
 
 			# Add the image to the database
 			self.comm.downloaderToDatabase.send_message('downloader-addPixivImageToDatabase', (imageInfo, self.caller))

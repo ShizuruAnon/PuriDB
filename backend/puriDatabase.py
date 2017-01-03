@@ -130,7 +130,7 @@ class database:
 
 	# Find path to write file to disk
 	# + Make this path
-	def makeImagePath(self, newImageInfo, i):
+	def makeImagePath(self, newImageInfo):
 		# Create folder to write the image to
 
 		picsFolder = os.getcwd() + u'/pics/'
@@ -138,21 +138,20 @@ class database:
 			os.makedirs(picsFolder)
 
 		# Create the filename to write the file to
-		if newImageInfo.type != 'ugoira':
-			fName = picsFolder + str(newImageInfo.imageId) + '_' + str(i) + '.png'
-		else:
-			fName = picsFolder + str(newImageInfo.imageId) + '_' + str(i) + '.zip'
+		imageId = newImageInfo.get_value('image_id')
+		filename, extension = os.path.splitext(newImageInfo.get_value('image_url'))
+		fName = picsFolder + imageId + extension
 
 		return fName
 
 
 	# Write an image to the disk
-	def writeImageToDisk(self, newImageInfo, i):
-		fName =  self.makeImagePath(newImageInfo, i)
+	def writeImageToDisk(self, newImageInfo):
+		fName =  self.makeImagePath(newImageInfo,)
 
 		# Write the file
 		f = file(fName, 'wb+', 4096)
-		f.write(newImageInfo.imageDatas[i])
+		f.write(newImageInfo.imageData)
 		f.close()
 
 		return fName
@@ -170,39 +169,31 @@ class database:
 		newImageInfo = message[0]
 		searchGui = message[1]
 
-		# Write all images (for a manga) to the database
-		for i in range(len(newImageInfo.imageDatas)):
+		# Write the image to the disk, get the path
+		imagePath = self.writeImageToDisk(newImageInfo)
 
-			# Write the image to the disk, get the path
-			imagePath = self.writeImageToDisk(newImageInfo, i)
+		# Get the hash of the file
+		imageHash = self.getFileHash(newImageInfo.imageData)
 
-			# Get the hash of the file
-			imageHash = self.getFileHash(newImageInfo.imageDatas[i])
+		# Check if the file is already in the database
+		imageId = self.isFileInDatabase(imageHash)
+		if imageId == 0:
+			# Add Tags to the db
+			tagIds = []
+			tagIds.append(self.addTagEntry(u'image_path', imagePath))
+			tagIds.append(self.addTagEntry(u'image_hash', imageHash))
+			for tag in newImageInfo.tags:
+				tagIds.append(self.addTagEntry(u'tag', tag))
 
-			# Check if the file is already in the database
-			imageId = self.isFileInDatabase(imageHash)
-			if imageId == 0:
-				# Add Tags to the db
-				tagIds = []
-				tagIds.append(self.addTagEntry(u'image_path', imagePath))
-				tagIds.append(self.addTagEntry(u'image_hash', imageHash))
-				tagIds.append(self.addTagEntry(u'pixiv_id', newImageInfo.imageId))
-				tagIds.append(self.addTagEntry(u'artist_id', newImageInfo.artistId))
-				tagIds.append(self.addTagEntry(u'image_name', newImageInfo.imageName))
-				tagIds.append(self.addTagEntry(u'artist_name', newImageInfo.artistName))
-				tagIds.append(self.addTagEntry(u'bookmarks', newImageInfo.numBookmarks))
-				for tag in newImageInfo.tags:
-					tagIds.append(self.addTagEntry(u'tag', tag))
+			# Add the imageTagPairs to the database
+			imageId = self.addImageTagPairEntry(0, tagIds[0])
+			for i in range(1, len(tagIds)):
+				self.addImageTagPairEntry(imageId, tagIds[i])
 
-				# Add the imageTagPairs to the database
-				imageId = self.addImageTagPairEntry(0, tagIds[0])
-				for i in range(1, len(tagIds)):
-					self.addImageTagPairEntry(imageId, tagIds[i])
+		imageInfo = self.get_image_info(imageId)
 
-			imageInfo = self.get_image_info(imageId)
-
-			evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, imageInfo)
-			wx.PostEvent(searchGui.parent.parent.imageScrollPanel, evt)
+		evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, imageInfo)
+		wx.PostEvent(searchGui.parent.parent.imageScrollPanel, evt)
 
 
 	def isFileInDatabase(self, imageHash):
@@ -368,7 +359,7 @@ class database:
 					first()
 			imageInfo.add_tag(tag.tagAttribute, tag.tagValue)
 
-		imageInfo.imagePath = imageInfo.get_unique_tag_of_attribute('image_path').tagValue
+		imageInfo.imagePath = imageInfo.get_value('image_path')
 		self.getAllTagParents(imageInfo)
 
 		return imageInfo
