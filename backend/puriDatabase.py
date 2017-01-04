@@ -35,15 +35,15 @@ class tagEntry(baseDatabaseClass):
 	tagId = Column(Integer, Sequence('tagSequenceId'), primary_key=True)
 	tagAttribute = Column(Unicode(tagAttributeSize), nullable=False)
 	tagValue = Column(Unicode(tagStringSize), nullable=False)
-	#parentTagId = Column(Integer, nullable=False)
-	#childTagId = Column(Integer, nullable=False)
+	#tag2Id = Column(Integer, nullable=False)
+	#tag1Id = Column(Integer, nullable=False)
 
-class tagFamilyInfoEntry(baseDatabaseClass):
-	__tablename__ = 'tagFamilyInfoTable'
+class tagLinkEntry(baseDatabaseClass):
+	__tablename__ = 'tagLinkTable'
 
-	tagFamilyInfoId = Column(Integer, Sequence('tagFamilyInfoSequenceId'), primary_key=True)
-	parentTagId = Column(Integer, nullable=False)
-	childTagId = Column(Integer, nullable=False)
+	tagLinkId = Column(Integer, Sequence('tagLinkSequenceId'), primary_key=True)
+	tag1Id = Column(Integer, nullable=False)
+	tag2Id = Column(Integer, nullable=False)
 
 ###############################################
 _database_manager = None
@@ -73,10 +73,10 @@ class puriDatabaseManager(threading.Thread):
 			elif messageType == 'database-localImageSearchByTags':
 				ret = self.database.localImageSearchByTags(message)
 				#self.sendResponse(sender, messageType, ret)
-			elif messageType == 'gui-getAllTagFamilyInfo':
-				self.database.getAllTagFamilyInfo(message)
-			elif messageType == 'gui-addTagParents':
-				self.database.addTagParents(message)
+			elif messageType == 'gui-importTagLinks':
+				self.database.importTagLinks(message)
+			elif messageType == 'gui-exportTagLinks':
+				self.database.exportTagLinks(message)
 
 
 	def get_next_command(self):
@@ -233,48 +233,48 @@ class database:
 		else:
 			return tag.tagId
 	
-	def findTagFamilyInfoId(self, childTagId, parentTagId):
-		tagFamilyInfo = self.session.query(tagFamilyInfoEntry).\
-				filter_by(childTagId=childTagId).\
-				filter_by(parentTagId=parentTagId).\
+	def findTagLinkId(self, tag1Id, tag2Id):
+		tagLink = self.session.query(tagLinkEntry).\
+				filter_by(tag1Id=tag1Id).\
+				filter_by(tag2Id=tag2Id).\
 				first()
-		if tagFamilyInfo == None:
+		if tagLink == None:
 			return -1
 		else:
-			return tagFamilyInfo.tagFamilyInfoId
+			return tagtagLink.tagtagLinkId
 
-	def addTagParent(self, childTagAttribute, childTagValue, parentTagAttribute, parentTagValue):
-		childTagId = self.addTagEntry(childTagAttribute, childTagValue)
-		parentTagId = self.addTagEntry(parentTagAttribute, parentTagValue)
+	def addTagLink(self, tag1Attribute, tag1Value, tag2Attribute, tag2Value):
+		tag1Id = self.addTagEntry(tag1Attribute, tag1Value)
+		tag2Id = self.addTagEntry(tag2Attribute, tag2Value)
 
-		tagFamilyId = self.findTagFamilyInfoId(childTagId, parentTagId)
-		if tagFamilyId == -1:
-			tagFamilyInfo = tagFamilyInfoEntry(parentTagId=parentTagId, childTagId=childTagId)
-			self.session.add(tagFamilyInfo)
+		tagLinkId = self.findTagLinkId(tag1Id, tag2Id)
+		if tagLinkId == -1:
+			tagLink = tagLinkEntry(tag1Id=tag1Id, tag2Id=tag2Id)
+			self.session.add(tagLink)
 			self.session.commit()
-			tagFamilyId = self.findTagFamilyInfoId(childTagId, parentTagId)
-		return tagFamilyId
+			tagLinkId = self.findTagLinkId(tag1Id, tag1Id)
+		return tagLinkId
 
-	def addTagParents(self, message):
-		tagParentList = message
-		for i in range(0, len(tagParentList)):
-			self.addTagParent(tagParentList[i][0], tagParentList[i][1], tagParentList[i][2], tagParentList[i][3])
+	def exportTagLinks(self, message):
+		allTagLinks = message
+		for i in range(0, len(allTagLinks)):
+			self.addTagLink(allTagLinks[i][0], allTagLinks[i][1], allTagLinks[i][2], allTagLinks[i][3])
 
-	def getAllTagFamilyInfo(self, message):
+	def importTagLinks(self, message):
 		sendbackGui = message
-		allFamilyInfo = self.session.query(tagFamilyInfoEntry).all()
+		allTagLinks = self.session.query(tagLinkEntry).all()
 
-		allInfo = []
-		for familyInfo in allFamilyInfo:
-			childInfo = self.session.query(tagEntry).\
-					filter_by(tagId=familyInfo.childTagId).\
+		allLinkPairs = []
+		for tagLink in allTagLinks:
+			tag1 = self.session.query(tagEntry).\
+					filter_by(tagId=tagLink.tag1Id).\
 					first()
-			parentInfo = self.session.query(tagEntry).\
-					filter_by(tagId=familyInfo.parentTagId).\
+			tag2 = self.session.query(tagEntry).\
+					filter_by(tagId=tagLink.tag2Id).\
 					first()
-			allInfo.append((familyInfo, childInfo, parentInfo))
+			allLinkPairs.append((tag1, tag2))
 
-		evt = puriEvents.transferTagFamilyInfoEvent(puriEvents.myEVT_transferTagFamilyInfo, -1, allInfo)
+		evt = puriEvents.importTagLinksEvent(puriEvents.myEVT_importTagLinks, -1, allLinkPairs)
 		wx.PostEvent(sendbackGui, evt)
 
 	def findImageTagPairEntryId(self, imageId, tagId):
@@ -299,29 +299,32 @@ class database:
 		imageId = self.findImageTagPairEntryId(imageId, tagId)
 		return imageId
 
-	def getTagParents(self, tag):
+	def getLinkedTags(self, tag):
 		tagId = self.findTagId(tag.tagAttribute, tag.tagValue)
-		familyInfo = self.session.query(tagFamilyInfoEntry).\
-			filter_by(childTagId=tagId).\
+		allLinkedTagInfo = self.session.query(tagLinkEntry).\
+			filter_by(or_(tag1Id=tagId, tag2Id=tagId)).\
 			all()
-		parentTags = []
-		for i in range(0, len(familyInfo)):
+
+		linkedTags = []
+		for i in range(0, len(allLinkedTagInfo)):
+			linkInfo = allLinkedTagInfo[i]
+			if linkInfo.tag1Id == tagId:
+				queryWithId = linkInfo.tag2Id
+			else:
+				queryWithId = linkInfo.tag1Id
 			tag = self.session.query(tagEntry).\
-				filter_by(tagId=familyInfo[i].parentTagId).\
+				filter_by(tagId=queryWithId).\
 				first()
 			if tag != None:
-				parentTags.append(tag)
-		return parentTags
+				linkedTags.append(tag)
+		return linkedTags
 
 
-	def getAllTagParents(self, imageInfo):
-		# Get the first level parents
-		tagParents = []
+	def getAllTagLinks(self, imageInfo):
+		# Get the first level links
+		linkedTags = []
 		for i in range(0, len(imageInfo.tags)):
-			parents = self.getTagParents(imageInfo.tags[i])
-			if len(parents) > 0:
-				for j in range(0, len(parents)):
-					tagParents.append(parents[j])
+			linkedTags += self.getLinkedTags(imageInfo.tags[i])
 
 		while len(tagParents) > 0:
 			# Remove Redundant Tags
@@ -333,17 +336,12 @@ class database:
 					pass
 
 			# Add Tags
-			for i in range(0, len(tagParents)):
-				imageInfo.tags.append(tagParents[i])
+			imageInfo.tags += linkedTags
 
 			# Search for new Tags
 			newTagParents = []
 			for i in range(0, len(tagParents)):
-				parents = self.getTagParents(tagParents[i])
-				if len(parents) > 0:
-					for j in range(0, len(parents)):
-						newTagParents.append(parents[j])
-				
+				newTagLinks += self.getLinkedTags(tagParents[i])
 			tagParents = newTagParents
 
 
@@ -360,7 +358,7 @@ class database:
 			imageInfo.add_tag(tag.tagAttribute, tag.tagValue)
 
 		imageInfo.imagePath = imageInfo.get_value('image_path')
-		self.getAllTagParents(imageInfo)
+		self.getAllTagLinks(imageInfo)
 
 		return imageInfo
 

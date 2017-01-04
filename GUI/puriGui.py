@@ -2,7 +2,7 @@ import wx
 import sys
 from puriGuiDownloadPanel import puriDownloadPanel
 from puriGuiSearchPanel import puriImageSearchPanel
-from puriGuiTagFamilyInfoPanel import tagFamilyInfoPanel
+from puriGuiLinkedTagsEditorPanel import linkedTagsEditorPanel
 
 # Import from the backend
 sys.path.insert(0, './../backend')
@@ -64,7 +64,7 @@ class puriNotebook(wx.Notebook):
 		# Start with these tags just because
 		self.addTab('Download Tab')
 		self.addTab('Search Tab')
-		self.addTab('Tag Family Tab')
+		self.addTab('Tag Links Editor Tab')
 
 	def OnPageChanged(self, event):
 		old = event.GetOldSelection()
@@ -87,9 +87,9 @@ class puriNotebook(wx.Notebook):
 		elif panelType == 'Search Tab':
 			newPanel = puriImageSearchPanel(self)
 			newLabel = 'Search'
-		elif panelType == 'Tag Family Tab':
-			newPanel = tagFamilyInfoPanel(self)
-			newLabel = 'Tag Family'
+		elif panelType == 'Tag Links Editor Tab':
+			newPanel = linkedTagsEditorPanel(self)
+			newLabel = 'Tag Links Editor'
 		self.AddPage(newPanel, newLabel)
 		self.SetSelection(self.GetPageCount() - 1)
 

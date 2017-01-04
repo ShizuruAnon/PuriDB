@@ -31,13 +31,13 @@ class setImagesDownloadedEvent(wx.PyCommandEvent):
 	def getValue(self):
 		return self.numImagesDownloaded
 
-myEVT_transferTagFamilyInfo = wx.NewEventType()
-EVT_transferTagFamilyInfo = wx.PyEventBinder(myEVT_transferTagFamilyInfo, 1)
-class transferTagFamilyInfoEvent(wx.PyCommandEvent):
-	def __init__ (self, etype, eid, allFamilyInfo):
+myEVT_importTagLinks = wx.NewEventType()
+EVT_importTagLinks = wx.PyEventBinder(myEVT_importTagLinks, 1)
+class importTagLinksEvent(wx.PyCommandEvent):
+	def __init__ (self, etype, eid, allTagLinks):
 		wx.PyCommandEvent.__init__(self, etype, eid)
-		self.allFamilyInfo = allFamilyInfo
+		self.allTagLinks = allTagLinks
 
 	def getValue(self):
-		return self.allFamilyInfo
+		return self.allTagLinks
 

@@ -17,29 +17,29 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 		self.grid.Add(self.linkedTagsListCtrl, pos=(0, 0), span=(3, 4), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
 		
 		self.newTagLinksBox = puriGuiCommon.searchTagBox(self, boxTitle='Tags to Link')
-		self.grid.Add(self.newTagLinksBox, pos=(3, 0), span=(3, 2), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
+		self.grid.Add(self.newTagLinksBox, pos=(3, 0), span=(2, 2), flag=wx.EXPAND|wx.ALIGN_LEFT, border=0)
 		
 		# Add Tag Relationships
 		self.addTagRelationshipsButton = wx.Button(self, label='Add Tag Relationships', size=(100, 25))
-		self.grid.Add(self.addTagRelationshipsButton, pos=(3, 3), span=(1, 2), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
+		self.grid.Add(self.addTagRelationshipsButton, pos=(3, 2), span=(1, 2), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
 		self.addTagRelationshipsButton.Bind(wx.EVT_BUTTON, self.addTagRelationshipsToListBoxs)
 		
 		# Clear Table
 		self.clearTableButton = wx.Button(self, label='Clear Table', size=(100, 25))
-		self.grid.Add(self.clearTableButton, pos=(4, 1), span=(1, 1), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
+		self.grid.Add(self.clearTableButton, pos=(5, 1), span=(1, 1), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
 		self.clearTableButton.Bind(wx.EVT_BUTTON, self.clearTable)# Clear Table
 		
 		# Get all Tag Relationships
 		self.importFromDatabaseButton = wx.Button(self, label='Import From Database', size=(100, 25))
-		self.grid.Add(self.importFromDatabaseButton, pos=(4, 2), span=(1, 1), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
+		self.grid.Add(self.importFromDatabaseButton, pos=(5, 2), span=(1, 1), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
 		self.importFromDatabaseButton.Bind(wx.EVT_BUTTON, self.importTagLinks)
 
 		# Add to database
 		self.addToDatabaseButton = wx.Button(self, label='Export to Database', size=(100, 25))
-		self.grid.Add(self.addToDatabaseButton, pos=(4, 3), span=(1, 1), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
+		self.grid.Add(self.addToDatabaseButton, pos=(5, 3), span=(1, 1), flag=wx.ALIGN_RIGHT|wx.ALIGN_TOP, border=0)
 		self.addToDatabaseButton.Bind(wx.EVT_BUTTON, self.exportTagLinks)# Clear Table
 		
-		self.Bind(puriEvents.EVT_transferTagFamilyInfo, self.displayCurrentTagFamilyInfo)
+		self.Bind(puriEvents.EVT_importTagLinks, self.displayCurrentTagFamilyInfo)
 		self.importTagLinks()
 
 		self.grid.AddGrowableCol(0)
@@ -60,9 +60,9 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 			for j in range(i + 1, len(tags)):
 				newTagLinks.append(tags[i][0], tags[i][1], tags[j][0], tags[j][1])
 
-		self.addNewLinks(self, newTagLinks)
+		self.addNewTagLinks(self, newTagLinks)
 		
-	def addNewLinks(self, newTagLinks):
+	def addNewTagLinks(self, newTagLinks):
 		
 		# Remove all instances of previously added tags from list
 		numAddedTags = self.linkedTagsListCtrl.GetItemCount()
@@ -117,4 +117,4 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 			tag2 = self.tagFamilyAllInfo[i][2]
 			newTagLinks.append((tag1.tagAttribute, tag1.tagValue, tag2.tagAttribute, tag2.tagValue))
 
-		self.addCombos(newTagLinks)
+		self.addNewTagLinks(newTagLinks)
