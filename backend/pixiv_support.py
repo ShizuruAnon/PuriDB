@@ -82,9 +82,13 @@ def parseImageHtml(imageHtml):
     imageInfo = puriDataStructures.puriImageInfo()
 
     classInfo = imageHtml.a['class']
+    print (classInfo)
     if classInfo == ['work', '_work', '']:
         imageType = 'pixiv_image'
-    elif classInfo == ['work', '_work', 'multiple', '']:
+    elif classInfo == ['work', '_work', 'multiple', ''] or \
+            classInfo == ['work', '_work', 'manga', 'multiple', ''] or \
+            classInfo == ['work', '_work', 'manga', 'multiple', 'rtl', ''] or \
+            classInfo == ['work', '_work', 'manga', '']:
         imageType = 'pixiv_manga'
     elif classInfo == ['work', '_work', 'ugoku-illust', '']:
         imageType = 'pixiv_ugoira'
@@ -119,7 +123,10 @@ def parse_tags(responce, searchInfo):
 
     pageImageInfo = []
     allImagesInPageHtml = page.findAll('li', {'class':'image-item'})
+    i = 0
     for imageHtml in allImagesInPageHtml:
+        print (i)
+        i += 1
         pageImageInfo.append(parseImageHtml(imageHtml))
 
     page.decompose()

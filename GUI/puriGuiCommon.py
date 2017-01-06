@@ -121,5 +121,5 @@ class searchTagBox(optionsGridPanel):
 
 		# Add Items to the listBox if they exist
 		for i in range(0, len(newTags)):
-			index = self.addedTagsListCtrl.InsertItem(sys.maxint, newTags[i][0])
-			self.addedTagsListCtrl.SetItem(index, 1, newTags[i][1])
+			index = self.addedTagsListCtrl.InsertStringItem(sys.maxint, newTags[i][0])
+			self.addedTagsListCtrl.SetStringItem(index, 1, newTags[i][1])

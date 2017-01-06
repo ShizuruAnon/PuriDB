@@ -2,7 +2,7 @@
 import os
 import hashlib
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Unicode, Table, create_engine
+from sqlalchemy import Column, Integer, String, Unicode, Table, create_engine, or_
 from sqlalchemy.schema import Sequence, ForeignKey
 from sqlalchemy.orm import sessionmaker, mapper
 import puriDataStructures
@@ -68,16 +68,16 @@ class puriDatabaseManager(threading.Thread):
 			(sender, messageType, message) = self.get_next_command()
 			if sender == '':
 				pass
-			elif messageType == 'downloader-addPixivImageToDatabase':
-				self.database.addPixivImageToDatabase(message)
-			elif messageType == 'database-localImageSearchByTags':
-				ret = self.database.localImageSearchByTags(message)
-				#self.sendResponse(sender, messageType, ret)
-			elif messageType == 'gui-importTagLinks':
-				self.database.importTagLinks(message)
-			elif messageType == 'gui-exportTagLinks':
-				self.database.exportTagLinks(message)
-
+			else:
+				if messageType == 'downloader-addPixivImageToDatabase':
+					self.database.addPixivImageToDatabase(message)
+				elif messageType == 'database-localImageSearchByTags':
+					ret = self.database.localImageSearchByTags(message)
+					#self.sendResponse(sender, messageType, ret)
+				elif messageType == 'gui-importTagLinks':
+					self.database.importTagLinks(message)
+				elif messageType == 'gui-exportTagLinks':
+					self.database.exportTagLinks(message)
 
 	def get_next_command(self):
 		sender = ''
@@ -166,6 +166,7 @@ class database:
 
 
 	def addPixivImageToDatabase(self, message):
+
 		newImageInfo = message[0]
 		searchGui = message[1]
 
@@ -183,7 +184,7 @@ class database:
 			tagIds.append(self.addTagEntry(u'image_path', imagePath))
 			tagIds.append(self.addTagEntry(u'image_hash', imageHash))
 			for tag in newImageInfo.tags:
-				tagIds.append(self.addTagEntry(u'tag', tag))
+				tagIds.append(self.addTagEntry(tag.tagAttribute, tag.tagValue))
 
 			# Add the imageTagPairs to the database
 			imageId = self.addImageTagPairEntry(0, tagIds[0])
@@ -194,7 +195,7 @@ class database:
 
 		evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, imageInfo)
 		wx.PostEvent(searchGui.parent.parent.imageScrollPanel, evt)
-
+		self.session.commit()
 
 	def isFileInDatabase(self, imageHash):
 
@@ -218,8 +219,8 @@ class database:
 		if tagId == -1:
 			newTagEntry = tagEntry(tagAttribute=tagAttribute, tagValue=tagValue)
 			self.session.add(newTagEntry)
-			self.session.commit()
 			tagId = self.findTagId(tagAttribute, tagValue)
+			#self.session.commit()
 		return tagId
 
 
@@ -251,7 +252,7 @@ class database:
 		if tagLinkId == -1:
 			tagLink = tagLinkEntry(tag1Id=tag1Id, tag2Id=tag2Id)
 			self.session.add(tagLink)
-			self.session.commit()
+			#self.session.commit()
 			tagLinkId = self.findTagLinkId(tag1Id, tag1Id)
 		return tagLinkId
 
@@ -259,6 +260,7 @@ class database:
 		allTagLinks = message
 		for i in range(0, len(allTagLinks)):
 			self.addTagLink(allTagLinks[i][0], allTagLinks[i][1], allTagLinks[i][2], allTagLinks[i][3])
+		self.session.commit()
 
 	def importTagLinks(self, message):
 		sendbackGui = message
@@ -276,6 +278,7 @@ class database:
 
 		evt = puriEvents.importTagLinksEvent(puriEvents.myEVT_importTagLinks, -1, allLinkPairs)
 		wx.PostEvent(sendbackGui, evt)
+		self.session.commit()
 
 	def findImageTagPairEntryId(self, imageId, tagId):
 		imageTagPair = self.session.query(imageTagPairEntry).\
@@ -287,7 +290,7 @@ class database:
 			return -1
 		elif imageTagPair.imageId == 0:
 			imageTagPair.imageId = imageTagPair.imageTagPairId
-			self.session.commit()
+			#self.session.commit()
 
 		return imageTagPair.imageId
 
@@ -295,14 +298,14 @@ class database:
 	def addImageTagPairEntry(self, imageId, tagId):
 		imageTagPair = imageTagPairEntry(imageId=imageId, tagId=tagId)
 		self.session.add(imageTagPair)
-		self.session.commit()
+		#self.session.commit()
 		imageId = self.findImageTagPairEntryId(imageId, tagId)
 		return imageId
 
 	def getLinkedTags(self, tag):
 		tagId = self.findTagId(tag.tagAttribute, tag.tagValue)
 		allLinkedTagInfo = self.session.query(tagLinkEntry).\
-			filter_by(or_(tag1Id=tagId, tag2Id=tagId)).\
+			filter(or_(tagLinkEntry.tag1Id==tagId, tagLinkEntry.tag2Id==tagId)).\
 			all()
 
 		linkedTags = []
@@ -326,12 +329,12 @@ class database:
 		for i in range(0, len(imageInfo.tags)):
 			linkedTags += self.getLinkedTags(imageInfo.tags[i])
 
-		while len(tagParents) > 0:
+		while len(linkedTags) > 0:
 			# Remove Redundant Tags
 			for i in range(0, len(imageInfo.tags)):
 				try:
 					while True:
-						tagParents.remove(imageInfo.tags[i])
+						linkedTags.remove(imageInfo.tags[i])
 				except ValueError:
 					pass
 
@@ -339,10 +342,10 @@ class database:
 			imageInfo.tags += linkedTags
 
 			# Search for new Tags
-			newTagParents = []
-			for i in range(0, len(tagParents)):
-				newTagLinks += self.getLinkedTags(tagParents[i])
-			tagParents = newTagParents
+			newlinkedTags = []
+			for i in range(0, len(linkedTags)):
+				newTagLinks += self.getLinkedTags(linkedTags[i])
+			linkedTags = newlinkedTags
 
 
 	def get_image_info(self, imageId):
@@ -423,3 +426,5 @@ class database:
 				evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, imageInfo)
 				wx.PostEvent(searchGui, evt)
 		#return imageInfos
+		self.session.commit()
+

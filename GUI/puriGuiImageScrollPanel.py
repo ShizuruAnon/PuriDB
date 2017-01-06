@@ -26,19 +26,17 @@ class puriThumbnail(wx.Panel):
 		self.imageInfo = imageInfo
 
 		self.fullImage = wx.Image(imageInfo.imagePath, wx.BITMAP_TYPE_ANY)
-		import pdb
-		import pyperclip
 		#pdb.set_trace()
 
-		fullBitmap = wx.Bitmap(self.fullImage)
-		thumbnailBitmap = wx.Bitmap(self.resizeImage(self.fullImage))
-		self.thumbnailStaticBitmap = wx.StaticBitmap()
+		self.thumbnailImage = self.resizeImage(self.fullImage)
+		thumbnailBitmap = wx.BitmapFromImage(self.thumbnailImage)
+		self.thumbnailStaticBitmap = wx.StaticBitmap(self, -1, thumbnailBitmap)
 		#self.thumbnailStaticBitmap.Hide()
-		self.thumbnailStaticBitmap.Create(self, -1, thumbnailBitmap)
+		#self.thumbnailStaticBitmap.Create(self, -1, thumbnailBitmap)
 		#self.thumbnailStaticBitmap.Create(self, -1, fullBitmap)
 
 		self.vSizer = wx.BoxSizer(wx.VERTICAL)
-		self.vSizer.SetMinSize(thumbnailWidth, thumbnailHeight)
+		self.vSizer.SetMinSize((thumbnailWidth, thumbnailHeight))
 		self.vSizer.Add(self.thumbnailStaticBitmap, flag=wx.ALIGN_CENTER)
 		self.SetSizer(self.vSizer)
 		#self.thumbnailStaticBitmap.Show()
@@ -193,5 +191,5 @@ class puriImageInfoPanel(puriGuiCommon.optionsGridPanel):
 			self.imageTagsListCtrl.DeleteItem(0)
 
 		for i in range(0, len(imageInfo.tags)):
-			index = self.imageTagsListCtrl.InsertItem(sys.maxint, imageInfo.tags[i].tagAttribute)
-			self.imageTagsListCtrl.SetItem(index, 1, imageInfo.tags[i].tagValue)
+			index = self.imageTagsListCtrl.InsertStringItem(sys.maxint, imageInfo.tags[i].tagAttribute)
+			self.imageTagsListCtrl.SetStringItem(index, 1, imageInfo.tags[i].tagValue)

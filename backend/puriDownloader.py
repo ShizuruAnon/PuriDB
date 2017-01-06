@@ -1,6 +1,5 @@
 import os
 
-import pdb
 import json
 import shutil
 #import imageInfo
@@ -18,6 +17,8 @@ import pixiv_support
 import threading
 import wx
 import puriEvents
+import puriDataStructures
+import copy
 
 
 _downloader_manager = None
@@ -87,8 +88,6 @@ class pixiv_image_searcher:
 	
 	# Seach from a bunch of tags
 	def tag_search(self, message):
-		import pdb
-		pdb.set_trace()
 		searchOptions = message[0]
 		self.caller = message[1]
 		# Initialize Variables
@@ -100,10 +99,11 @@ class pixiv_image_searcher:
 		# Search Until no more images are found
 		while continueSearch:
 			page += 1 # To the next page
+			print 'page = %d' %(page)
 
 			# Generate the Url, open it, then parse it for results
 			searchUrl = self.generate_tag_url(page, searchOptions)
-
+			print 'searchUrl = %s' % (searchUrl)
 			self.comm.downloaderToBrowser.send_message('browser-open', searchUrl)
 			messageType, responce = self.comm.browserToDownloader.rec_message()
 
@@ -111,6 +111,7 @@ class pixiv_image_searcher:
 
 			# Get the URLs and size
 			for i in range(0, len(pageImageInfo)):
+				print ('searching for %d' %(i))
 				self.get_image_url(pageImageInfo[i])
 				#pageImageInfo[i] = self.get_images_size(pageImageInfo[i])
 
@@ -209,7 +210,6 @@ class pixiv_image_searcher:
 		elif imageType == 'pixiv_manga':
 			imageId = imageInfo.get_value('image_id')
 			imageInfo.add_tag('pixiv_manga_id', imageId)
-			imageInfo.remove_tag('image_id', imageId)
 
 			# Create the url for the page the image is on
 			postPageUrl = 'http://www.pixiv.net/member_illust.php?mode=manga&illust_id='
@@ -222,8 +222,17 @@ class pixiv_image_searcher:
 			# Parse the responce to get the images
 			soup = BeautifulSoup(responce, 'html.parser')
 			imageHtmls = soup.findAll('img', {'data-filter':"manga-image"})
+			
 			for i in range(0, len(imageHtmls)):
-				tempInfo = imageInfo
+				tempInfo = puriDataStructures.puriImageInfo()
+				tempInfo.imagePath = imageInfo.imagePath
+				tempInfo.tags = imageInfo.tags[:]
+				while True:
+					val = tempInfo.get_value('image_id')
+					if val != None:
+						tempInfo.remove_tag('image_id', val)
+					else:
+						break
 				tempInfo.add_tag('image_id', imageId + '_' + str(i))
 				tempInfo.add_tag('image_url', imageHtmls[i]['data-src'])
 				self.imageInfoToDownload.append(tempInfo)
@@ -234,7 +243,7 @@ class pixiv_image_searcher:
 
 			# Create the url for the page the image is on
 			postPageUrl = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id='
-			postPageUrl += imageInfo.imageId
+			postPageUrl += imageInfo.get_value('image_id')
 
 			# Send the request to the page and get the responce
 			self.comm.downloaderToBrowser.send_message('browser-open', postPageUrl)

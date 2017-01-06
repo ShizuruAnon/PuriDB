@@ -24,7 +24,7 @@ class puriMainMenubar(wx.MenuBar):
 		# File menu
 		fileMenu = wx.Menu()
 		qmi = wx.MenuItem(fileMenu, wx.ID_EXIT, '&Quit\tCtrl+W')
-		fileMenu.Append(qmi)
+		fileMenu.AppendItem(qmi)
 		self.Bind(wx.EVT_MENU, parent.OnQuit, qmi)
 		self.Append(fileMenu, '&File')
 
@@ -32,8 +32,8 @@ class puriMainMenubar(wx.MenuBar):
 		dlMenu = wx.Menu()
 		downloadTab = wx.MenuItem(dlMenu, wx.ID_ANY, 'Download Tab')
 		searchTab = wx.MenuItem(dlMenu, wx.ID_ANY, 'Search Tab')
-		dlMenu.Append(downloadTab)
-		dlMenu.Append(searchTab)
+		dlMenu.AppendItem(downloadTab)
+		dlMenu.AppendItem(searchTab)
 		self.Bind(wx.EVT_MENU, self.addDownloadTab, downloadTab)
 		self.Bind(wx.EVT_MENU, self.addSearchTab, searchTab)
 		self.Append(dlMenu, 'Open New Tab')

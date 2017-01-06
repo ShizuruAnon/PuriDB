@@ -41,10 +41,7 @@ class puriImageInfo():
 		return None
 
 	def remove_tag(self, tagAttribute, tagValue):
-		try:
-			self.tags.remove((tagAttribute, tagValue))
-		except:
-			pass
+		self.tags = [tag for tag in self.tags if (tag.tagAttribute != tagAttribute or tag.tagValue != tagValue)]
 	
 
 class puriDownloadOptions:
