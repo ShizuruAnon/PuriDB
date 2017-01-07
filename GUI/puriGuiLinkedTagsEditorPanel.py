@@ -46,21 +46,47 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 		self.grid.AddGrowableRow(0)
 		self.refreshPanel()
 
+	def compareTags(self, tag1, tag2):
+		if tag1[0] > tag2[0]:
+			return -1
+		elif tag1[0] < tag2[0]:
+			return 1
+		elif tag1[1] > tag2[1]:
+			return -1
+		elif tag1[1] < tag2[1]:
+			return 1
+		else:
+			return 0
+
 	def addTagRelationshipsToListBoxs(self, event):
 		tags = self.newTagLinksBox.getSearchTags2()
 		self.newTagLinksBox.clearListCtrl()
 		
-		# Sort
-		locale.setlocale(locale.LC_ALL, "")
-		tags.sort(cmp=locale.strcoll)
+		if len(tags) == 0:
+			return
+
+		# Insertion Sort
+		sortedTags = [tags[0],]
+		for i in range(1, len(tags)):
+			found = False
+			for j in range(0, len(sortedTags)):
+				if (self.compareTags(tags[i], sortedTags[j])) == -1:
+					sortedTags.insert(j, tags[i])
+					found = True
+					break;
+			if found == False:
+				sortedTags.append(tags[i])
+
+		tags = sortedTags
 
 		# Make all taglink combos
 		newTagLinks = []
 		for i in range(0, len(tags)):
 			for j in range(i + 1, len(tags)):
-				newTagLinks.append(tags[i][0], tags[i][1], tags[j][0], tags[j][1])
+				if (i != j):
+					newTagLinks.append((tags[i][0], tags[i][1], tags[j][0], tags[j][1]))
 
-		self.addNewTagLinks(self, newTagLinks)
+		self.addNewTagLinks(newTagLinks)
 		
 	def addNewTagLinks(self, newTagLinks):
 		
@@ -79,10 +105,10 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 				pass
 
 		for i in range(0, len(newTagLinks)):
-			index = self.linkedTagsListCtrl.InsertItem(sys.maxint, newTagLinks[i][0])
-			self.linkedTagsListCtrl.SetItem(index, 1, newTagLinks[i][1])
-			self.linkedTagsListCtrl.SetItem(index, 2, newTagLinks[i][2])
-			self.linkedTagsListCtrl.SetItem(index, 3, newTagLinks[i][3])
+			index = self.linkedTagsListCtrl.InsertStringItem(sys.maxint, newTagLinks[i][0])
+			self.linkedTagsListCtrl.SetStringItem(index, 1, newTagLinks[i][1])
+			self.linkedTagsListCtrl.SetStringItem(index, 2, newTagLinks[i][2])
+			self.linkedTagsListCtrl.SetStringItem(index, 3, newTagLinks[i][3])
 
 	def importTagLinks(self, event=None):
 		comm = puriCommunication.get_communications()
@@ -90,10 +116,10 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 	
 	def getTableInfo(self):
 		numSearchTags = self.linkedTagsListCtrl.GetItemCount()
-		tagsLinks = []
+		tagLinks = []
 		for i in range(0, numSearchTags):
 			tagLink = (self.linkedTagsListCtrl.GetItemText(i, 0), self.linkedTagsListCtrl.GetItemText(i, 1), self.linkedTagsListCtrl.GetItemText(i, 2), self.linkedTagsListCtrl.GetItemText(i, 3))
-			tagsLinks.append(tagLink)
+			tagLinks.append(tagLink)
 		return tagLinks
 
 	def exportTagLinks(self, event=None):
@@ -108,13 +134,13 @@ class linkedTagsEditorPanel(puriGuiCommon.optionsGridPanel):
 			self.linkedTagsListCtrl.DeleteItem(0)
 
 	def displayCurrentTagFamilyInfo(self, event):
-		#self.clearTable()
+		self.clearTable()
 
 		self.tagFamilyAllInfo = event.getValue()
 		newTagLinks = []
 		for i in range(0, len(self.tagFamilyAllInfo)):
-			tag1 = self.tagFamilyAllInfo[i][1]
-			tag2 = self.tagFamilyAllInfo[i][2]
+			tag1 = self.tagFamilyAllInfo[i][0]
+			tag2 = self.tagFamilyAllInfo[i][1]
 			newTagLinks.append((tag1.tagAttribute, tag1.tagValue, tag2.tagAttribute, tag2.tagValue))
 
 		self.addNewTagLinks(newTagLinks)

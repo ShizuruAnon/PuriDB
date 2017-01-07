@@ -29,11 +29,13 @@ def main():
 	#database = puriDatabase.get_database('testGuiDownload.db')
 	comm = puriCommunication.get_communications()
 
-
 	# Start Managers
 	puriBrowser.start_browser_manager(browserOptions)
 	puriDownloader.start_downloader_manager()
 	puriDatabase.start_database_manager('testGuiDownload.db')
+
+	import threading
+	print (threading.enumerate())
 
 	# Login
 	comm.guiToBrowser.send_message('browser-doLogin')

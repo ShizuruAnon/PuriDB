@@ -242,7 +242,7 @@ class database:
 		if tagLink == None:
 			return -1
 		else:
-			return tagtagLink.tagtagLinkId
+			return tagLink.tagLinkId
 
 	def addTagLink(self, tag1Attribute, tag1Value, tag2Attribute, tag2Value):
 		tag1Id = self.addTagEntry(tag1Attribute, tag1Value)
@@ -274,11 +274,14 @@ class database:
 			tag2 = self.session.query(tagEntry).\
 					filter_by(tagId=tagLink.tag2Id).\
 					first()
-			allLinkPairs.append((tag1, tag2))
+
+			t1 = puriDataStructures.puriImageTag(tag1.tagAttribute, tag1.tagValue)
+			t2 = puriDataStructures.puriImageTag(tag2.tagAttribute, tag2.tagValue)
+			allLinkPairs.append((t1, t2))
 
 		evt = puriEvents.importTagLinksEvent(puriEvents.myEVT_importTagLinks, -1, allLinkPairs)
 		wx.PostEvent(sendbackGui, evt)
-		self.session.commit()
+
 
 	def findImageTagPairEntryId(self, imageId, tagId):
 		imageTagPair = self.session.query(imageTagPairEntry).\
@@ -319,33 +322,37 @@ class database:
 				filter_by(tagId=queryWithId).\
 				first()
 			if tag != None:
-				linkedTags.append(tag)
+				t = puriDataStructures.puriImageTag(tag.tagAttribute, tag.tagValue)
+				linkedTags.append(t)
 		return linkedTags
 
 
 	def getAllTagLinks(self, imageInfo):
+
 		# Get the first level links
 		linkedTags = []
 		for i in range(0, len(imageInfo.tags)):
 			linkedTags += self.getLinkedTags(imageInfo.tags[i])
 
+		loop = 0
 		while len(linkedTags) > 0:
+			loop += 1
+			print 'LOOP - KYON KUN DENWA - %d' % (loop)
+			if loop > 100:
+				import pdb
+				pdb.set_trace()
 			# Remove Redundant Tags
-			for i in range(0, len(imageInfo.tags)):
-				try:
-					while True:
-						linkedTags.remove(imageInfo.tags[i])
-				except ValueError:
-					pass
+			for tag in imageInfo.tags:
+				linkedTags = [linkedTag for linkedTag in linkedTags if (tag.tagAttribute != linkedTag.tagAttribute or tag.tagValue != linkedTag.tagValue)]
 
 			# Add Tags
 			imageInfo.tags += linkedTags
 
 			# Search for new Tags
-			newlinkedTags = []
+			newLinkedTags = []
 			for i in range(0, len(linkedTags)):
-				newTagLinks += self.getLinkedTags(linkedTags[i])
-			linkedTags = newlinkedTags
+				newLinkedTags += self.getLinkedTags(linkedTags[i])
+			linkedTags = newLinkedTags
 
 
 	def get_image_info(self, imageId):

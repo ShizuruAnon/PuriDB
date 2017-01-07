@@ -12,7 +12,7 @@ class puriImageInfo():
 
 	def add_tag(self, tagAttribute, tagValue):
 		if (tagAttribute == None):
-			tagAttribute = 'tag'
+			tagAttribute = u'tag'
 		newTag = puriImageTag(tagAttribute, tagValue)
 		self.tags.append(newTag)
 

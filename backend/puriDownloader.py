@@ -82,7 +82,7 @@ def get_puri_downloader():
 
 class pixiv_image_searcher:
 	def __init__(self):
-		self.website = 'pixiv'
+		self.website = u'pixiv'
 		#self.browser = puriBrowser.getBrowser()
 		self.comm = puriCommunication.get_communications()
 	
@@ -100,7 +100,7 @@ class pixiv_image_searcher:
 		while continueSearch:
 			page += 1 # To the next page
 			print 'page = %d' %(page)
-
+			
 			# Generate the Url, open it, then parse it for results
 			searchUrl = self.generate_tag_url(page, searchOptions)
 			print 'searchUrl = %s' % (searchUrl)
@@ -178,7 +178,7 @@ class pixiv_image_searcher:
 		self.comm.downloaderToBrowser.send_message('browser-open_novisit', request)
 		messageType, responce = self.comm.browserToDownloader.rec_message()
 		size = int(responce.info()['Content-Length'])
-		imageInfo.add_tag('image_size', size)
+		imageInfo.add_tag(u'image_size', size)
 
 
 	# Get the direct URL of each image
@@ -202,14 +202,14 @@ class pixiv_image_searcher:
 			result = soup.find('img', {'class':'original-image'})
 			
 			# Add the url to the list
-			imageInfo.add_tag('image_url', result['data-src'])
+			imageInfo.add_tag(u'image_url', result['data-src'])
 
 			self.imageInfoToDownload.append(imageInfo)
 			
 		# Get the URL for a series of images in a manga post
 		elif imageType == 'pixiv_manga':
 			imageId = imageInfo.get_value('image_id')
-			imageInfo.add_tag('pixiv_manga_id', imageId)
+			imageInfo.add_tag(u'pixiv_manga_id', imageId)
 
 			# Create the url for the page the image is on
 			postPageUrl = 'http://www.pixiv.net/member_illust.php?mode=manga&illust_id='
@@ -233,8 +233,8 @@ class pixiv_image_searcher:
 						tempInfo.remove_tag('image_id', val)
 					else:
 						break
-				tempInfo.add_tag('image_id', imageId + '_' + str(i))
-				tempInfo.add_tag('image_url', imageHtmls[i]['data-src'])
+				tempInfo.add_tag(u'image_id', imageId + '_' + str(i))
+				tempInfo.add_tag(u'image_url', imageHtmls[i]['data-src'])
 				self.imageInfoToDownload.append(tempInfo)
 
 
@@ -263,8 +263,8 @@ class pixiv_image_searcher:
 							break
 
 			# Add the image to the url list and add the data to the data as well
-			imageInfo.add_tag('image_url', url)
-			imageInfo.add_tag('ugoira_data', ugoiraData)
+			imageInfo.add_tag(u'image_url', url)
+			imageInfo.add_tag(u'ugoira_data', ugoiraData)
 			self.imageInfoToDownload.append(imageInfo)
 
 

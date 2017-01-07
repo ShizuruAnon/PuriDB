@@ -15,6 +15,7 @@ import sys
 import json
 import threading
 #import puriEvents
+import time
 import puriCommunication
 
 #import PixivHelper
@@ -50,7 +51,15 @@ class puriBrowserManager(threading.Thread):
                 res = self.browser.doLogin()
                 self.loggedIn = res
             elif messageType == 'browser-open':
-                responce = self.browser.open(message).read()
+                numTries = 0
+                while numTries < 5:
+                    try:
+                        responce = self.browser.open(message).read()
+                        break
+                    except:
+                        print ('ERROR: failed to get the responce')
+                        numTries += 1
+                        time.sleep(3)
                 self.sendResponse(sender, messageType, responce)
             elif messageType == 'browser-open_novisit':
                 responce = self.browser.open_novisit(message)

@@ -25,10 +25,10 @@ class puriThumbnail(wx.Panel):
 		self.parent = parent
 		self.imageInfo = imageInfo
 
-		self.fullImage = wx.Image(imageInfo.imagePath, wx.BITMAP_TYPE_ANY)
+		fullImage = wx.Image(imageInfo.imagePath, wx.BITMAP_TYPE_ANY)
 		#pdb.set_trace()
 
-		self.thumbnailImage = self.resizeImage(self.fullImage)
+		self.thumbnailImage = self.resizeImage(fullImage)
 		thumbnailBitmap = wx.BitmapFromImage(self.thumbnailImage)
 		self.thumbnailStaticBitmap = wx.StaticBitmap(self, -1, thumbnailBitmap)
 		#self.thumbnailStaticBitmap.Hide()

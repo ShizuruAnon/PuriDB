@@ -84,21 +84,21 @@ def parseImageHtml(imageHtml):
     classInfo = imageHtml.a['class']
     print (classInfo)
     if classInfo == ['work', '_work', '']:
-        imageType = 'pixiv_image'
+        imageType = u'pixiv_image'
     elif classInfo == ['work', '_work', 'multiple', ''] or \
             classInfo == ['work', '_work', 'manga', 'multiple', ''] or \
             classInfo == ['work', '_work', 'manga', 'multiple', 'rtl', ''] or \
             classInfo == ['work', '_work', 'manga', '']:
-        imageType = 'pixiv_manga'
+        imageType = u'pixiv_manga'
     elif classInfo == ['work', '_work', 'ugoku-illust', '']:
-        imageType = 'pixiv_ugoira'
+        imageType = u'pixiv_ugoira'
     imageInfo.add_tag('image_type', imageType)
 
-    imageInfo.add_tag('image_id', imageHtml.img['data-id'])
-    imageInfo.add_tag('artist_id', imageHtml.img['data-user-id'])
-    imageInfo.add_tag('image_name', imageHtml.h1['title'])
+    imageInfo.add_tag(u'image_id', imageHtml.img['data-id'])
+    imageInfo.add_tag(u'artist_id', imageHtml.img['data-user-id'])
+    imageInfo.add_tag(u'image_name', imageHtml.h1['title'])
     artistName = imageHtml.find('a', {'class':['user', 'ui-profile-popup']})['data-user_name']
-    imageInfo.add_tag('artist_name', artistName)
+    imageInfo.add_tag(u'artist_name', artistName)
 
     bookmarkHtml = imageHtml.find('a', {'class':['bookmark-count', 'ui-tooltip']})
     if bookmarkHtml != None:
@@ -108,11 +108,11 @@ def parseImageHtml(imageHtml):
         numBookmarks = int(bookmarkString)
     else:
         numBookmarks = 0
-    imageInfo.add_tag('num_bookmarks', numBookmarks)
+    imageInfo.add_tag(u'num_bookmarks', numBookmarks)
     
     tags = imageHtml.img['data-tags'].split()
     for tag in tags:
-        imageInfo.add_tag('tag', tag)
+        imageInfo.add_tag(u'tag', tag)
 
     return imageInfo
 
