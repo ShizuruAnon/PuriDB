@@ -325,7 +325,7 @@ class database:
 				t = puriDataStructures.puriImageTag(tag.tagAttribute, tag.tagValue)
 				linkedTags.append(t)
 		return linkedTags
-
+		
 
 	def getAllTagLinks(self, imageInfo):
 

@@ -31,9 +31,6 @@ class puriThumbnail(wx.Panel):
 		self.thumbnailImage = self.resizeImage(fullImage)
 		thumbnailBitmap = wx.BitmapFromImage(self.thumbnailImage)
 		self.thumbnailStaticBitmap = wx.StaticBitmap(self, -1, thumbnailBitmap)
-		#self.thumbnailStaticBitmap.Hide()
-		#self.thumbnailStaticBitmap.Create(self, -1, thumbnailBitmap)
-		#self.thumbnailStaticBitmap.Create(self, -1, fullBitmap)
 
 		self.vSizer = wx.BoxSizer(wx.VERTICAL)
 		self.vSizer.SetMinSize((thumbnailWidth, thumbnailHeight))
@@ -68,10 +65,8 @@ class puriThumbnail(wx.Panel):
 
 	def onLeftClick(self, event):
 		print 'buttonPress for %s' % (self.imageInfo.imagePath)
-		import pdb
-		#pdb.set_trace()
-		# TODO not working
 
+		# TODO not working
 		self.parent.parent.imageInfoPanel.displayImageInfo(self.imageInfo)
 		self.BackgroundColor = wx.BLUE
 
