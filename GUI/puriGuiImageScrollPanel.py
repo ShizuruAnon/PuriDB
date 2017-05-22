@@ -25,7 +25,7 @@ class puriThumbnail(wx.Panel):
 		self.parent = parent
 		self.imageInfo = imageInfo
 
-		fullImage = wx.Image(imageInfo.imagePath, wx.BITMAP_TYPE_ANY)
+		fullImage = wx.Image(imageInfo.path, wx.BITMAP_TYPE_ANY)
 		#pdb.set_trace()
 
 		self.thumbnailImage = self.resizeImage(fullImage)
@@ -51,7 +51,7 @@ class puriThumbnail(wx.Panel):
 	def copyImageIntoClipboard(self):
 		clipboard = gtk.clipboard_get()
 		img = gtk.Image()
-		img.set_from_file(self.imageInfo.imagePath)
+		img.set_from_file(self.imageInfo.path)
 		clipboard.set_image(img.get_pixbuf())
 		clipboard.store()
 
@@ -61,10 +61,10 @@ class puriThumbnail(wx.Panel):
 		self.PopupMenu(self.popupmenu, pos)
 
 	def sharex_upload(self, event):
-		subprocess.call(['C:\\Program Files\\ShareX\\ShareX.exe', self.imageInfo.imagePath])
+		subprocess.call(['C:\\Program Files\\ShareX\\ShareX.exe', self.imageInfo.path])
 
 	def onLeftClick(self, event):
-		print 'buttonPress for %s' % (self.imageInfo.imagePath)
+		print 'buttonPress for %s' % (self.imageInfo.path)
 
 		# TODO not working
 		self.parent.parent.imageInfoPanel.displayImageInfo(self.imageInfo)
@@ -99,7 +99,7 @@ class puriImageScrollPanel(ScrolledPanel):
 
 
 	def addImage(self, imageInfo):
-		(extra, extension) = os.path.splitext(imageInfo.imagePath)
+		(extra, extension) = os.path.splitext(imageInfo.path)
 
 		if extension != '.zip':
 			self.thumbnails.append(puriThumbnail(self, imageInfo))
@@ -149,7 +149,7 @@ class puriImageScrollPanel(ScrolledPanel):
 			self.thumbnailGrid.Add(self.thumbnails[i], pos=(xpos, ypos), border=10)
 			self.thumbnails[i].Show()
 		#for i in range(0, self.numImages):
-		#	print 'imageId=%d\timagePath=%s' % (self.thumbnails[i].imageInfo.imageId, self.thumbnails[i].imageInfo.imagePath)
+		#	print 'imageId=%d\tpath=%s' % (self.thumbnails[i].imageInfo.imageId, self.thumbnails[i].imageInfo.path)
 	
 
 	def onAddImageToScrollEvent(self, event):

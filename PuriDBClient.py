@@ -32,7 +32,7 @@ def main():
 	# Start Managers
 	puriBrowser.start_browser_manager(browserOptions)
 	puriDownloader.start_downloader_manager()
-	puriDatabase.start_database_manager('testGuiDownload.db')
+	puriDatabase.start_database_manager('./testGuiDownload/')
 
 	import threading
 	print (threading.enumerate())

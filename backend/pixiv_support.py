@@ -125,6 +125,8 @@ def parse_tags(responce, searchInfo):
     allImagesInPageHtml = page.findAll('li', {'class':'image-item'})
     i = 0
     for imageHtml in allImagesInPageHtml:
+        import pdb
+        pdb.set_trace()
         print (i)
         i += 1
         pageImageInfo.append(parseImageHtml(imageHtml))

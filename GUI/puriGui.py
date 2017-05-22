@@ -64,7 +64,7 @@ class puriNotebook(wx.Notebook):
 		# Start with these tags just because
 		self.addTab('Download Tab')
 		self.addTab('Search Tab')
-		self.addTab('Tag Links Editor Tab')
+		#self.addTab('Tag Links Editor Tab')
 
 	def OnPageChanged(self, event):
 		old = event.GetOldSelection()
