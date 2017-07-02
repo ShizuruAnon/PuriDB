@@ -178,7 +178,7 @@ class pixiv_image_searcher:
         # Send Request and get responce
         self.comm.downloaderToBrowser.send_message('browser-open_novisit', request)
         messageType, responce = self.comm.browserToDownloader.rec_message()
-        size = int(responce.info()['Content-Length'])
+        size = str(responce.info()['Content-Length'])
         imageInfo.add_tag(u'image_size', size)
 
 
@@ -225,8 +225,7 @@ class pixiv_image_searcher:
             imageHtmls = soup.findAll('img', {'data-filter':"manga-image"})
             
             for i in range(0, len(imageHtmls)):
-                tempInfo = puriDataStructures.puriImageInfo()
-                tempInfo.imagePath = imageInfo.imagePath
+                tempInfo = puriDataStructures.puriImageInfo(path=None, imHash=None, tags=None)
                 tempInfo.tags = imageInfo.tags[:]
                 while True:
                     val = tempInfo.get_value('image_id')
@@ -277,8 +276,6 @@ class pixiv_image_searcher:
         count = 0
         # Download all images in list
         for imageInfo in self.imageInfoToDownload:
-            import pdb
-            pdb.set_trace()
             if imageInfo.get_value('image_type') == 'pixiv_manga':
                 imageId = imageInfo.get_value('pixiv_manga_id')
             else:
@@ -299,7 +296,7 @@ class pixiv_image_searcher:
 
             # Continue until image is fully downloaded
             self.get_image_size(imageInfo)
-            imageSize = imageInfo.get_value('image_size')
+            imageSize = int(imageInfo.get_value('image_size'))
             while (downloadedSize < imageSize):
 
                 # Go to back of image and tell position

@@ -186,5 +186,5 @@ class puriImageInfoPanel(puriGuiCommon.optionsGridPanel):
 			self.imageTagsListCtrl.DeleteItem(0)
 
 		for i in range(0, len(imageInfo.tags)):
-			index = self.imageTagsListCtrl.InsertStringItem(sys.maxint, imageInfo.tags[i].tagAttribute)
-			self.imageTagsListCtrl.SetStringItem(index, 1, imageInfo.tags[i].tagValue)
+			index = self.imageTagsListCtrl.InsertStringItem(sys.maxint, imageInfo.tags[i].attr)
+			self.imageTagsListCtrl.SetStringItem(index, 1, imageInfo.tags[i].val)

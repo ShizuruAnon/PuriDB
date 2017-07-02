@@ -102,10 +102,16 @@ def parseImageHtml(imageHtml):
 
     bookmarkHtml = imageHtml.find('a', {'class':['bookmark-count', 'ui-tooltip']})
     if bookmarkHtml != None:
+
         bookmarkString = bookmarkHtml['data-tooltip']
         bookmarkString = bookmarkString[0:bookmarkString.find(u'件')]
         bookmarkString = bookmarkString.replace(',', '')
-        numBookmarks = int(bookmarkString)
+        bookmarkString = bookmarkString.split()
+        
+        if len(bookmarkString) == 1:
+            numBookmarks = str(bookmarkString[0])
+        elif len(bookmarkString) == 2:
+            numBookmarks = str(bookmarkString[0])
     else:
         numBookmarks = 0
     imageInfo.add_tag(u'num_bookmarks', numBookmarks)
@@ -125,8 +131,8 @@ def parse_tags(responce, searchInfo):
     allImagesInPageHtml = page.findAll('li', {'class':'image-item'})
     i = 0
     for imageHtml in allImagesInPageHtml:
-        import pdb
-        pdb.set_trace()
+        #import pdb
+        #pdb.set_trace()
         print (i)
         i += 1
         pageImageInfo.append(parseImageHtml(imageHtml))

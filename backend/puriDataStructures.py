@@ -1,12 +1,11 @@
 
 class puriTag():
-    def __init__(self, val=None, attr=None):
-        self.val = val
+    def __init__(self, attr, val):
         self.attr = attr
-
+        self.val = val
 
 class puriImageInfo():
-    def __init__(self, path=None, imHash=None, tags=[]):
+    def __init__(self, path=None, imHash=None, tags=None):
         self.path = path
         self.hash = imHash
         self.tags = tags
@@ -14,8 +13,11 @@ class puriImageInfo():
     def add_tag(self, tagAttr, tagVal):
         if (tagAttr == None):
             tagAttr = u'tag'
-        newTag = puriTag(tagVal, tagAttr)
-        self.tags.append(newTag)
+        newTag = puriTag(tagAttr, tagVal)
+        if self.tags == None:
+            self.tags = [newTag]
+        else:
+            self.tags.append(newTag)
 
     def has_tag_value(self, tagVal, tagAttr = None):
         if len(self.tags) == 0:

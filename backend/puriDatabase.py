@@ -87,16 +87,17 @@ class database:
         path = self.databasePath + 'imageInfo.db'
         imageInfo = []
         if os.path.exists(path):
-            with open(path, 'r') as f:
-                lines = f.readlines()
-                for i in range(0, len(lines), 3):
+            with io.open(path, 'r', encoding='utf-8') as f:
+                lines = f.read().splitlines()
+                nums = range(0, len(lines), 3)
+                for i in nums:
                     path = lines[i]
                     imHash = lines[i+1]
                     tags = lines[i+2].split(',')
                     tags = [x.split('::') for x in tags]
-                    tags = [puriTag(x[0], x[1]) for x in tags]
+                    tags = [puriTag(x[0], x[1]) for x in tags if len(x) == 2]
                     imageInfo.append(puriImageInfo(path, imHash, tags))
-        return imageInfo
+        return set(imageInfo)
 
     def writeImageDbFile(self):
         path = self.databasePath + 'imageInfo.db'
@@ -116,13 +117,17 @@ class database:
         path = self.databasePath + 'tags.db'
         tags = []
         if os.path.exists(path):
-            with open(path, 'r') as f:
+            with io.open(path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 tags = [x.split('::') for x in lines]
                 tags = [puriTag(x[0], x[1]) for x in tags]
-        return tags
+        
+        return set(tags)
 
     def writeTagDbFile(self):
+        import pdb
+        pdb.set_trace()
+        
         path = self.databasePath + 'tags.db'
         s = u''
         if not os.path.exists(self.databasePath):
@@ -172,8 +177,7 @@ class database:
         return unicode(hashString, 'utf8')
 
     def addTag(self, tag):
-        if len(self.tags) == 0 or not all (x for x in self.tags if tag.attr==x.attr and tag.val==x.val):
-            self.tags.append(tag)
+        self.tags.add(tag)
 
     def getImageInfo(self, imHash=None, path=None):
         possImg = []
@@ -181,7 +185,7 @@ class database:
             possImg = [x for x in self.imageInfos if x.hash == imHash]
         elif path != None:
             possImg = [x for x in self.imageInfos if x.path == path]
-        if len(possImg) == 0:
+        if len(possImg) != 1:
             return False
         else:
             return possImg[0]
@@ -190,9 +194,6 @@ class database:
     def addPixivImageToDatabase(self, message):
         (newImageInfo, searchGui) = message
 
-        import pdb
-        pdb.set_trace()
-        
         imHash = self.getFileHash(newImageInfo.imageData)
         imageInDatabase = self.getImageInfo(imHash=imHash)
         if imageInDatabase==False:
@@ -205,7 +206,7 @@ class database:
             
             imageInDatabase = puriImageInfo(path=imPath, imHash=imHash, tags=newImageInfo.tags)
             del(newImageInfo)
-            self.imageInfos.append(imageInDatabase)
+            self.imageInfos.add(imageInDatabase)
             self.writeDatabase()
 
         evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, imageInDatabase)
@@ -216,31 +217,29 @@ class database:
 
         # Parse the tagList
         searchTags = [x.split('::') for x in searchTags]
-        searchTags = [puriTag(None, x[0]) if len(x) == 1 else puriTag(x[0], x[1]) for x in searchTags]
+        searchTags = [puriTag(u'tag', x[0]) if len(x) == 1 and x[0] != '' else puriTag(x[0], attr=x[1]) for x in searchTags]
 
         # Add in other tags that are linked
         # TODO
         searchTagSets = [[x] for x in searchTags]
 
+        import pdb
+        pdb.set_trace()
+
         # Get list of images that fit each tag
         imageSets = []
         for searchTagSet in searchTagSets:
-            imageSet = set()
+            tempSet = set([])
             for tag in searchTagSet:
-                if tag.attr == u'tag':
-                    imageSet |= set([x for x in self.imageInfos if x.val == tag.val])
-                else:
-                    imageSet |= set([x for x in self.imageInfos if x.attr == tag.attr and x.val == tag.val])
-            imageSets.append(list(imageSet))
+                y = set([x for x in self.imageInfos if x.has_tag_value(tag.val, tag.attr)])
+                tempSet |= y
+            imageSets.append(set(tempSet))
         
         # Find images common to each set
-        images = imageSets[0]
-        for i in range(1, len(imageSets)):
-            images &= imageSets[i]
-        images = list(images)
+        images = set.intersection(*imageSets)
 
         for image in images:
-            evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, imageInfo)
+            evt = puriEvents.addImageToScrollEvent(puriEvents.myEVT_addImageToScroll, -1, image)
             wx.PostEvent(searchGui, evt)
 
 
